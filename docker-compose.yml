@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  api:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - RPC_USER=bitcoin
+      - RPC_PASSWORD=bitcoin
+      - RPC_HOST=bsv-node
+      - RPC_PORT=18332
+    restart: always
