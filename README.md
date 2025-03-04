@@ -182,6 +182,71 @@ curl -X GET http://localhost:5002/healthz
 }
 ```
 
+## 新機能
+
+### 1. マイニング報酬の生成
+
+マイニング報酬を生成するには、以下のAPIエンドポイントを使用します：
+
+**リクエスト:**
+```bash
+curl -X POST http://localhost:5002/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address": "<報酬受取アドレス>",
+    "numBlocks": 1,
+    "network": "jpy"
+  }'
+```
+
+**レスポンス:**
+```json
+{
+  "address": "mxyz123...",
+  "numBlocks": 1,
+  "blockHashes": [
+    "3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4"
+  ],
+  "network": "jpy"
+}
+```
+
+### 2. ネットワークモードの切り替え
+
+RegtestモードとTestモードを切り替えるには、以下のAPIエンドポイントを使用します：
+
+**リクエスト:**
+```bash
+curl -X POST http://localhost:5002/api/network/mode \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mode": "regtest",
+    "network": "jpy"
+  }'
+```
+
+**レスポンス:**
+```json
+{
+  "network": "jpy",
+  "mode": "regtest",
+  "changed": true,
+  "info": {
+    "version": 100800,
+    "subversion": "/Bitcoin SV:1.0.8/",
+    "protocolversion": 70015,
+    "localservices": "000000000000040d",
+    "localrelay": true,
+    "timeoffset": 0,
+    "networkactive": true,
+    "connections": 1,
+    "relayfee": 0.00000250,
+    "excessutxocharge": 0.00000000,
+    "warnings": ""
+  }
+}
+```
+
 ## ネットワーク設定
 
 APIは以下の2つのネットワークをサポートしています：

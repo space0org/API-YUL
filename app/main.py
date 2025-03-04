@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional
 import psycopg
-from app.core.bitcoin_utils import generate_keypair, get_balance, send_transaction
-from app.core.bitcoin_rpc import DEFAULT_NETWORK
+from app.core.bitcoin_utils import generate_keypair, get_balance, send_transaction, generate_blocks
+from app.core.bitcoin_rpc import DEFAULT_NETWORK, switch_network_mode
 
 app = FastAPI(
     title="BSV Node API",
@@ -46,6 +46,27 @@ class TransactionResponse(BaseModel):
     toAddress: str
     amount: float
     network: str
+
+class GenerateBlocksRequest(BaseModel):
+    address: str = Field(..., description="Address to receive mining rewards")
+    numBlocks: int = Field(1, description="Number of blocks to generate")
+    network: str = Field(DEFAULT_NETWORK, description="Network to use (jpy or lari)")
+
+class GenerateBlocksResponse(BaseModel):
+    address: str
+    numBlocks: int
+    blockHashes: List[str]
+    network: str
+
+class SwitchNetworkModeRequest(BaseModel):
+    mode: str = Field(..., description="Network mode to switch to (regtest or testnet)")
+    network: str = Field(DEFAULT_NETWORK, description="Network to use (jpy or lari)")
+
+class SwitchNetworkModeResponse(BaseModel):
+    network: str
+    mode: str
+    changed: bool
+    info: Dict[str, Any]
 
 @app.get("/healthz")
 async def healthz():
@@ -128,3 +149,29 @@ async def get_node_info(
         "difficulty": blockchain_info["difficulty"],
         "network": network
     }
+
+@app.post("/api/generate", response_model=GenerateBlocksResponse)
+async def generate_blocks_endpoint(request: GenerateBlocksRequest):
+    """
+    Generate blocks with mining rewards going to the specified address
+    
+    Args:
+        request: The generate blocks request details
+        
+    Returns:
+        GenerateBlocksResponse: The generate blocks result
+    """
+    return generate_blocks(request.address, request.numBlocks, network=request.network)
+
+@app.post("/api/network/mode", response_model=SwitchNetworkModeResponse)
+async def switch_network_mode_endpoint(request: SwitchNetworkModeRequest):
+    """
+    Switch between Regtest mode and Test mode
+    
+    Args:
+        request: The switch network mode request details
+        
+    Returns:
+        SwitchNetworkModeResponse: The switch network mode result
+    """
+    return switch_network_mode(request.mode, network=request.network)

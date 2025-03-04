@@ -84,3 +84,25 @@ def send_transaction(from_address: str, private_key: str, to_address: str, amoun
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send transaction on {network} network: {str(e)}")
+
+def generate_blocks(address: str, num_blocks: int = 1, network: str = DEFAULT_NETWORK) -> Dict[str, Any]:
+    """
+    Generate blocks with mining rewards going to the specified address
+    
+    Args:
+        address: The Bitcoin address to receive the mining rewards
+        num_blocks: The number of blocks to generate (default: 1)
+        network: The network to generate blocks on (jpy or lari)
+    """
+    try:
+        # Generate blocks with rewards going to the specified address
+        block_hashes = execute_rpc("generatetoaddress", num_blocks, address, network=network)
+        
+        return {
+            "address": address,
+            "numBlocks": num_blocks,
+            "blockHashes": block_hashes,
+            "network": network
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate blocks on {network} network: {str(e)}")

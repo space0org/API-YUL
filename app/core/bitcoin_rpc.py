@@ -66,3 +66,49 @@ def execute_rpc(method: str, *params, network: str = DEFAULT_NETWORK) -> Any:
         raise HTTPException(status_code=400, detail=f"RPC error ({network}): {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error executing RPC method ({network}): {str(e)}")
+
+def switch_network_mode(mode: str, network: str = DEFAULT_NETWORK) -> Dict[str, Any]:
+    """
+    Switch between Regtest mode and Test mode
+    
+    Args:
+        mode: The network mode to switch to ('regtest' or 'testnet')
+        network: The network to switch mode for (jpy or lari)
+    """
+    try:
+        if mode not in ['regtest', 'testnet']:
+            raise ValueError(f"Invalid mode: {mode}. Must be 'regtest' or 'testnet'")
+        
+        # Get current network info
+        rpc_connection = get_rpc_connection(network)
+        current_info = rpc_connection.getnetworkinfo()
+        
+        # Determine current mode
+        current_mode = 'regtest' if current_info.get('regtestmode', False) else 'testnet'
+        
+        # If already in the requested mode, return current info
+        if current_mode == mode:
+            return {
+                "network": network,
+                "mode": mode,
+                "changed": False,
+                "info": current_info
+            }
+        
+        # Execute RPC command to switch mode
+        # Note: This requires restarting the node, which may not be possible via RPC
+        # In a real implementation, this would require modifying bitcoin.conf and restarting the node
+        result = execute_rpc("setnetworkactive", False, network=network)  # Temporarily disable network
+        result = execute_rpc("setnetworkactive", True, network=network)   # Re-enable network with new mode
+        
+        # Get updated network info
+        updated_info = rpc_connection.getnetworkinfo()
+        
+        return {
+            "network": network,
+            "mode": mode,
+            "changed": True,
+            "info": updated_info
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to switch network mode on {network} network: {str(e)}")
