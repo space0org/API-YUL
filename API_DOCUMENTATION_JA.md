@@ -1,190 +1,240 @@
-# API-YUL ドキュメント
+# API-YUL API ドキュメント
 
-## 概要
+このドキュメントでは、API-YUL の API エンドポイントについて説明します。
 
-API-YULは、Bitcoin SVノードと対話するためのAPIです。JpyNetworkとLariNetworkの両方をサポートしています。
+## 基本情報
 
-## APIエンドポイント
+- ベース URL: `http://localhost:5002`
+- コンテンツタイプ: `application/json`
 
-### 1. 公開鍵と秘密鍵のペア作成
+## エンドポイント
 
-**エンドポイント:** `/api/keypair`
+### ヘルスチェック
 
-**メソッド:** POST
-
-**パラメータ:**
-- `network` (オプション): 使用するネットワーク（`jpy`または`lari`）。デフォルトは`jpy`。
-
-**リクエスト例:**
-```bash
-# デフォルトネットワーク（JpyNetwork）
-curl -X POST http://localhost:5002/api/keypair
-
-# ネットワーク指定
-curl -X POST "http://localhost:5002/api/keypair?network=jpy"
-curl -X POST "http://localhost:5002/api/keypair?network=lari"
+```
+GET /healthz
 ```
 
-**レスポンス例:**
-```json
-{
-  "address": "mxyz123...",
-  "privateKey": "cxyz123...",
-  "network": "jpy"
-}
-```
+サーバーの状態を確認します。
 
-### 2. 残高確認
+**レスポンス例**:
 
-**エンドポイント:** `/api/balance/{address}`
-
-**メソッド:** GET
-
-**パラメータ:**
-- `address`: 残高を確認するBitcoinアドレス
-- `network` (オプション): 使用するネットワーク（`jpy`または`lari`）。デフォルトは`jpy`。
-
-**リクエスト例:**
-```bash
-# デフォルトネットワーク（JpyNetwork）
-curl -X GET http://localhost:5002/api/balance/mxyz123...
-
-# ネットワーク指定
-curl -X GET "http://localhost:5002/api/balance/mxyz123...?network=jpy"
-curl -X GET "http://localhost:5002/api/balance/mxyz123...?network=lari"
-```
-
-**レスポンス例:**
-```json
-{
-  "address": "mxyz123...",
-  "balance": 10.5,
-  "unspentOutputs": [...],
-  "network": "jpy"
-}
-```
-
-### 3. 送金
-
-**エンドポイント:** `/api/send`
-
-**メソッド:** POST
-
-**リクエストボディ:**
-```json
-{
-  "fromAddress": "送信元アドレス",
-  "privateKey": "秘密鍵",
-  "toAddress": "送信先アドレス",
-  "amount": 金額,
-  "network": "jpy"  // オプション、デフォルトは"jpy"
-}
-```
-
-**リクエスト例:**
-```bash
-curl -X POST http://localhost:5002/api/send \
-  -H "Content-Type: application/json" \
-  -d '{
-    "fromAddress": "mxyz123...",
-    "privateKey": "cxyz123...",
-    "toAddress": "mabc123...",
-    "amount": 1.5,
-    "network": "jpy"
-  }'
-```
-
-**レスポンス例:**
-```json
-{
-  "transactionId": "txyz123...",
-  "fromAddress": "mxyz123...",
-  "toAddress": "mabc123...",
-  "amount": 1.5,
-  "network": "jpy"
-}
-```
-
-### 4. ノード情報
-
-**エンドポイント:** `/api/node/info`
-
-**メソッド:** GET
-
-**パラメータ:**
-- `network` (オプション): 使用するネットワーク（`jpy`または`lari`）。デフォルトは`jpy`。
-
-**リクエスト例:**
-```bash
-# デフォルトネットワーク（JpyNetwork）
-curl -X GET http://localhost:5002/api/node/info
-
-# ネットワーク指定
-curl -X GET "http://localhost:5002/api/node/info?network=jpy"
-curl -X GET "http://localhost:5002/api/node/info?network=lari"
-```
-
-**レスポンス例:**
-```json
-{
-  "version": 101000800,
-  "subversion": "/Bitcoin SV:1.0.8/",
-  "connections": 2,
-  "chain": "regtest",
-  "blocks": 265,
-  "difficulty": 4.656542373906925e-10,
-  "network": "jpy"
-}
-```
-
-### 5. ヘルスチェック
-
-**エンドポイント:** `/healthz`
-
-**メソッド:** GET
-
-**リクエスト例:**
-```bash
-curl -X GET http://localhost:5002/healthz
-```
-
-**レスポンス例:**
 ```json
 {
   "status": "ok"
 }
 ```
 
-## ネットワーク設定
+### キーペアの作成
 
-APIは以下の2つのネットワークをサポートしています：
+```
+POST /api/keypair
+```
 
-1. **JpyNetwork**
-   - ネットワークパラメータ: `jpy`
-   - P2Pポート: 18444
-   - RPCポート: 18332
+新しい公開鍵と秘密鍵のペアを作成します。
 
-2. **LariNetwork**
-   - ネットワークパラメータ: `lari`
-   - P2Pポート: 19444
-   - RPCポート: 19332
+**クエリパラメータ**:
 
-ネットワークパラメータを指定しない場合は、デフォルトでJpyNetworkが使用されます。
+- `network` (オプション): 使用するネットワーク（`jpy` または `lari`）。デフォルトは `jpy`。
 
-## 環境変数
+**レスポンス例**:
 
-APIは以下の環境変数を使用してネットワーク設定を行います：
+```json
+{
+  "address": "mzzys5TuqrGLdL1WU3P5TN1QqvQY5VmDwX",
+  "privateKey": "cNQKccYYQyGX9G9Qxq2DJev9jHygbZpb2UG7EvUapbtDx5XhkhYE",
+  "network": "jpy"
+}
+```
 
-### JpyNetwork設定
-- `JPY_RPC_USER`: JpyNetworkのRPCユーザー名
-- `JPY_RPC_PASSWORD`: JpyNetworkのRPCパスワード
-- `JPY_RPC_HOST`: JpyNetworkのホスト名またはIPアドレス
-- `JPY_RPC_PORT`: JpyNetworkのRPCポート
+### 残高確認
 
-### LariNetwork設定
-- `LARI_RPC_USER`: LariNetworkのRPCユーザー名
-- `LARI_RPC_PASSWORD`: LariNetworkのRPCパスワード
-- `LARI_RPC_HOST`: LariNetworkのホスト名またはIPアドレス
-- `LARI_RPC_PORT`: LariNetworkのRPCポート
+```
+GET /api/balance/{address}
+```
 
-環境変数が設定されていない場合は、デフォルト値が使用されます。
+指定したアドレスの残高を確認します。
+
+**クエリパラメータ**:
+
+- `network` (オプション): 使用するネットワーク（`jpy` または `lari`）。デフォルトは `jpy`。
+
+**レスポンス例**:
+
+```json
+{
+  "address": "mzzys5TuqrGLdL1WU3P5TN1QqvQY5VmDwX",
+  "balance": 100.0,
+  "unspentOutputs": [
+    {
+      "txid": "7b5685ee3abc4df9a5d295c4fdb3b9b7f1c789a4f2f8df13c9b90b5d7b9c6e5d",
+      "vout": 0,
+      "address": "mzzys5TuqrGLdL1WU3P5TN1QqvQY5VmDwX",
+      "account": "",
+      "scriptPubKey": "76a914d8c43e6f68ca4ea1e9b93da2d1e6a0ceb5af8a8c88ac",
+      "amount": 100.0,
+      "confirmations": 1,
+      "spendable": true,
+      "solvable": true
+    }
+  ],
+  "network": "jpy"
+}
+```
+
+### 送金
+
+```
+POST /api/send
+```
+
+一つのアドレスから別のアドレスに送金します。
+
+**リクエストボディ**:
+
+```json
+{
+  "fromAddress": "mzzys5TuqrGLdL1WU3P5TN1QqvQY5VmDwX",
+  "privateKey": "cNQKccYYQyGX9G9Qxq2DJev9jHygbZpb2UG7EvUapbtDx5XhkhYE",
+  "toAddress": "n1ZCjTcPxX2zVyFH5BjmbHrQCJp3DxRKdU",
+  "amount": 10.0,
+  "network": "jpy"
+}
+```
+
+**レスポンス例**:
+
+```json
+{
+  "transactionId": "7b5685ee3abc4df9a5d295c4fdb3b9b7f1c789a4f2f8df13c9b90b5d7b9c6e5d",
+  "fromAddress": "mzzys5TuqrGLdL1WU3P5TN1QqvQY5VmDwX",
+  "toAddress": "n1ZCjTcPxX2zVyFH5BjmbHrQCJp3DxRKdU",
+  "amount": 10.0,
+  "network": "jpy"
+}
+```
+
+### ノード情報
+
+```
+GET /api/node/info
+```
+
+ビットコインノードの情報を取得します。
+
+**クエリパラメータ**:
+
+- `network` (オプション): 使用するネットワーク（`jpy` または `lari`）。デフォルトは `jpy`。
+
+**レスポンス例**:
+
+```json
+{
+  "version": 100000,
+  "protocolversion": 70015,
+  "connections": 8,
+  "chain": "regtest",
+  "blocks": 100,
+  "difficulty": 4.656542373906925e-10,
+  "network": "jpy"
+}
+```
+
+## トークンブリッジ API
+
+トークンブリッジは別のサービスで、ポート 5001 で実行されています。
+
+### ブリッジ情報
+
+```
+GET /bridge/info
+```
+
+トークンブリッジの情報を取得します。
+
+**レスポンス例**:
+
+```json
+{
+  "exchange_rate": "1 Lari = 55 Jpy",
+  "networks": {
+    "jpy_network": {
+      "host": "jpynetwork-node",
+      "name": "JpyNetwork",
+      "port": 18332
+    },
+    "lari_network": {
+      "host": "larinetwork-node",
+      "name": "LariNetwork",
+      "port": 18332
+    }
+  },
+  "status": "operational"
+}
+```
+
+### JPY から LARI への交換
+
+```
+POST /bridge/swap/jpy-to-lari
+```
+
+JPY トークンを LARI トークンに交換します。
+
+**リクエストボディ**:
+
+```json
+{
+  "fromAddress": "mzzys5TuqrGLdL1WU3P5TN1QqvQY5VmDwX",
+  "privateKey": "cNQKccYYQyGX9G9Qxq2DJev9jHygbZpb2UG7EvUapbtDx5XhkhYE",
+  "toAddress": "n1ZCjTcPxX2zVyFH5BjmbHrQCJp3DxRKdU",
+  "amount": 55.0
+}
+```
+
+**レスポンス例**:
+
+```json
+{
+  "source_transaction": "7b5685ee3abc4df9a5d295c4fdb3b9b7f1c789a4f2f8df13c9b90b5d7b9c6e5d",
+  "destination_transaction": "6a4574dd2bbc3ce8a4c295c4fdb3b9b7f1c789a4f2f8df13c9b90b5d7b9c6e5d",
+  "source_amount": 55.0,
+  "destination_amount": 1.0,
+  "source_network": "jpy",
+  "destination_network": "lari",
+  "status": "completed"
+}
+```
+
+### LARI から JPY への交換
+
+```
+POST /bridge/swap/lari-to-jpy
+```
+
+LARI トークンを JPY トークンに交換します。
+
+**リクエストボディ**:
+
+```json
+{
+  "fromAddress": "n1ZCjTcPxX2zVyFH5BjmbHrQCJp3DxRKdU",
+  "privateKey": "cRQKccYYQyGX9G9Qxq2DJev9jHygbZpb2UG7EvUapbtDx5XhkhYF",
+  "toAddress": "mzzys5TuqrGLdL1WU3P5TN1QqvQY5VmDwX",
+  "amount": 1.0
+}
+```
+
+**レスポンス例**:
+
+```json
+{
+  "source_transaction": "6a4574dd2bbc3ce8a4c295c4fdb3b9b7f1c789a4f2f8df13c9b90b5d7b9c6e5d",
+  "destination_transaction": "7b5685ee3abc4df9a5d295c4fdb3b9b7f1c789a4f2f8df13c9b90b5d7b9c6e5d",
+  "source_amount": 1.0,
+  "destination_amount": 55.0,
+  "source_network": "lari",
+  "destination_network": "jpy",
+  "status": "completed"
+}
+```
