@@ -49,7 +49,7 @@ def get_rpc_connection(network: str = DEFAULT_NETWORK) -> AuthServiceProxy:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to connect to Bitcoin node ({network}): {str(e)}")
 
-def execute_rpc(method: str, *params, network: str = DEFAULT_NETWORK) -> Any:
+def execute_rpc(method: str, *params, network: str = DEFAULT_NETWORK, ignore_safe_mode: bool = False) -> Any:
     """
     Execute an RPC method with the given parameters on the specified network
     
@@ -57,13 +57,19 @@ def execute_rpc(method: str, *params, network: str = DEFAULT_NETWORK) -> Any:
         method: The RPC method to execute
         params: The parameters to pass to the RPC method
         network: The network to execute the RPC method on (jpy or lari)
+        ignore_safe_mode: Whether to ignore safe mode errors (default: False)
     """
     try:
         rpc_connection = get_rpc_connection(network)
         result = getattr(rpc_connection, method)(*params)
         return result
     except JSONRPCException as e:
-        raise HTTPException(status_code=400, detail=f"RPC error ({network}): {str(e)}")
+        # Check if it's a safe mode error and we should ignore it
+        if ignore_safe_mode and "Safe mode" in str(e):
+            # Return None for safe mode errors when ignore_safe_mode is True
+            return None
+        else:
+            raise HTTPException(status_code=400, detail=f"RPC error ({network}): {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error executing RPC method ({network}): {str(e)}")
 

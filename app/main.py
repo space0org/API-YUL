@@ -39,6 +39,8 @@ class BalanceResponse(BaseModel):
     balance: float
     unspentOutputs: List[Dict[str, Any]]
     network: str
+    safeMode: Optional[bool] = None
+    safeModeWarning: Optional[str] = None
 
 class TransactionResponse(BaseModel):
     transactionId: str
@@ -86,7 +88,7 @@ async def create_keypair(network: str = Query(DEFAULT_NETWORK, description="Netw
     """
     return generate_keypair(network=network)
 
-@app.get("/api/balance/{address}", response_model=BalanceResponse)
+@app.get("/api/balance/{address}", response_model=None)
 async def check_balance(
     address: str,
     network: str = Query(DEFAULT_NETWORK, description="Network to use (jpy or lari)")

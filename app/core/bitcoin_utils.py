@@ -39,18 +39,34 @@ def get_balance(address: str, network: str = DEFAULT_NETWORK) -> Dict[str, Any]:
         except:
             pass  # Address might already be imported
         
-        # Get the unspent transaction outputs for this address
-        unspent = execute_rpc("listunspent", 0, 9999999, [address], network=network)
-        
-        # Calculate the total balance
-        total_balance = sum(float(utxo['amount']) for utxo in unspent)
-        
-        return {
-            "address": address,
-            "balance": total_balance,
-            "unspentOutputs": unspent,
-            "network": network
-        }
+        try:
+            # Get the unspent transaction outputs for this address
+            unspent = execute_rpc("listunspent", 0, 9999999, [address], network=network)
+            
+            # Calculate the total balance
+            total_balance = sum(float(utxo['amount']) for utxo in unspent)
+            
+            return {
+                "address": address,
+                "balance": total_balance,
+                "unspentOutputs": unspent,
+                "network": network
+            }
+        except Exception as e:
+            # Check if it's a safe mode error
+            if "Safe mode" in str(e):
+                # Return zero balance when in safe mode
+                return {
+                    "address": address,
+                    "balance": 0.0,
+                    "unspentOutputs": [],
+                    "network": network,
+                    "safeMode": True,
+                    "safeModeWarning": str(e)
+                }
+            else:
+                # Re-raise other exceptions
+                raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get balance on {network} network: {str(e)}")
 
