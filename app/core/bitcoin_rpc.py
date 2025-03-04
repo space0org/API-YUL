@@ -1,21 +1,24 @@
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from fastapi import HTTPException
 import os
-from typing import Optional, Dict, Any
+import json
+from typing import Optional, Dict, Any, Union
 
 # Network configurations
 NETWORK_CONFIGS = {
     "jpy": {
-        "RPC_USER": "jpyuser",
-        "RPC_PASSWORD": "jpypassword",
-        "RPC_HOST": "localhost",  # Default to localhost for local development
-        "RPC_PORT": "18332"
+        "RPC_USER": "bitcoin",
+        "RPC_PASSWORD": "bitcoin",
+        "RPC_HOST": "172.18.0.2",  # JpyNetwork node IP
+        "RPC_PORT": "8332",
+        "SAFE_MODE_HANDLING": "graceful"  # Special handling for safe mode
     },
     "lari": {
-        "RPC_USER": "lariuser",
-        "RPC_PASSWORD": "laripassword",
-        "RPC_HOST": "localhost",  # Default to localhost for local development
-        "RPC_PORT": "19332"  # Different port for LariNetwork
+        "RPC_USER": "bitcoin",
+        "RPC_PASSWORD": "bitcoin",
+        "RPC_HOST": "172.18.0.3",  # LariNetwork node IP
+        "RPC_PORT": "8332",
+        "SAFE_MODE_HANDLING": "graceful"  # Now both networks use graceful handling
     }
 }
 
@@ -47,9 +50,10 @@ def get_rpc_connection(network: str = DEFAULT_NETWORK) -> AuthServiceProxy:
         
         return AuthServiceProxy(rpc_url)
     except Exception as e:
+        print(f"Failed to connect to Bitcoin node ({network}): {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to connect to Bitcoin node ({network}): {str(e)}")
 
-def execute_rpc(method: str, *params, network: str = DEFAULT_NETWORK) -> Any:
+def execute_rpc(method: str, *params, network: str = DEFAULT_NETWORK, ignore_safe_mode: bool = False) -> Any:
     """
     Execute an RPC method with the given parameters on the specified network
     
@@ -57,14 +61,53 @@ def execute_rpc(method: str, *params, network: str = DEFAULT_NETWORK) -> Any:
         method: The RPC method to execute
         params: The parameters to pass to the RPC method
         network: The network to execute the RPC method on (jpy or lari)
+        ignore_safe_mode: Whether to ignore safe mode errors (default: False)
     """
     try:
+        # Get network configuration
+        if network not in NETWORK_CONFIGS:
+            raise ValueError(f"Unknown network: {network}")
+        
+        config = NETWORK_CONFIGS[network]
+        safe_mode_handling = config.get("SAFE_MODE_HANDLING", "standard")
+        
         rpc_connection = get_rpc_connection(network)
         result = getattr(rpc_connection, method)(*params)
         return result
     except JSONRPCException as e:
-        raise HTTPException(status_code=400, detail=f"RPC error ({network}): {str(e)}")
+        error_str = str(e)
+        # Check if it's a safe mode error
+        if "Safe mode" in error_str:
+            print(f"Safe mode error in {network} for method {method}: {error_str}")
+            
+            # For graceful handling, return appropriate values for certain methods
+            if safe_mode_handling == "graceful":
+                if method == "listunspent":
+                    return []
+                elif method == "importaddress":
+                    return None
+                elif ignore_safe_mode:
+                    return None
+            
+            # For balance-related methods, raise a special exception
+            if method in ["listunspent", "importaddress"]:
+                raise HTTPException(
+                    status_code=200,  # Use 200 to indicate this is an expected error
+                    detail={
+                        "address": params[0] if len(params) > 0 else "",
+                        "balance": 0.0,
+                        "unspentOutputs": [],
+                        "network": network,
+                        "safeMode": True,
+                        "safeModeWarning": error_str
+                    }
+                )
+        
+        # Re-raise the exception with detailed information
+        print(f"RPC error ({network}) for method {method}: {error_str}")
+        raise HTTPException(status_code=400, detail=f"RPC error ({network}): {error_str}")
     except Exception as e:
+        print(f"Error executing RPC method ({network}) {method}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error executing RPC method ({network}): {str(e)}")
 
 def switch_network_mode(mode: str, network: str = DEFAULT_NETWORK) -> Dict[str, Any]:

@@ -1,6 +1,7 @@
 from app.core.bitcoin_rpc import execute_rpc, DEFAULT_NETWORK
 from fastapi import HTTPException
 from typing import Dict, List, Any, Optional
+from bitcoinrpc.authproxy import JSONRPCException
 
 def generate_keypair(network: str = DEFAULT_NETWORK) -> Dict[str, str]:
     """
@@ -22,7 +23,13 @@ def generate_keypair(network: str = DEFAULT_NETWORK) -> Dict[str, str]:
             "network": network
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate key pair on {network} network: {str(e)}")
+        # Return a structured error response
+        return {
+            "address": "",
+            "privateKey": "",
+            "network": network,
+            "error": str(e)
+        }
 
 def get_balance(address: str, network: str = DEFAULT_NETWORK) -> Dict[str, Any]:
     """
@@ -32,27 +39,58 @@ def get_balance(address: str, network: str = DEFAULT_NETWORK) -> Dict[str, Any]:
         address: The Bitcoin address to check
         network: The network to check the balance on (jpy or lari)
     """
+    # Initialize the result with default values
+    result = {
+        "address": address,
+        "balance": 0.0,
+        "unspentOutputs": [],
+        "network": network
+    }
+    
     try:
         # Import the address to the wallet if it's not already there
         try:
             execute_rpc("importaddress", address, "", False, network=network)
-        except:
-            pass  # Address might already be imported
+        except JSONRPCException as e:
+            # Check if it's a safe mode error
+            if "Safe mode" in str(e):
+                result["safeMode"] = True
+                result["safeModeWarning"] = str(e)
+                return result
+            # Re-raise other exceptions
+            raise
+        except Exception as e:
+            # Add error information to the result
+            result["error"] = str(e)
+            return result
         
         # Get the unspent transaction outputs for this address
-        unspent = execute_rpc("listunspent", 0, 9999999, [address], network=network)
-        
-        # Calculate the total balance
-        total_balance = sum(float(utxo['amount']) for utxo in unspent)
-        
-        return {
-            "address": address,
-            "balance": total_balance,
-            "unspentOutputs": unspent,
-            "network": network
-        }
+        try:
+            unspent = execute_rpc("listunspent", 0, 9999999, [address], network=network)
+            
+            # Calculate the total balance
+            total_balance = sum(float(utxo['amount']) for utxo in unspent)
+            
+            result["balance"] = total_balance
+            result["unspentOutputs"] = unspent
+            
+            return result
+        except JSONRPCException as e:
+            # Check if it's a safe mode error
+            if "Safe mode" in str(e):
+                result["safeMode"] = True
+                result["safeModeWarning"] = str(e)
+                return result
+            # Re-raise other exceptions
+            raise
+        except Exception as e:
+            # Add error information to the result
+            result["error"] = str(e)
+            return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get balance on {network} network: {str(e)}")
+        # Add error information to the result
+        result["error"] = str(e)
+        return result
 
 def send_transaction(from_address: str, private_key: str, to_address: str, amount: float, network: str = DEFAULT_NETWORK) -> Dict[str, Any]:
     """
@@ -69,6 +107,20 @@ def send_transaction(from_address: str, private_key: str, to_address: str, amoun
         # Import the private key if it's not already in the wallet
         try:
             execute_rpc("importprivkey", private_key, "", False, network=network)
+        except JSONRPCException as e:
+            # Check if it's a safe mode error
+            if "Safe mode" in str(e):
+                return {
+                    "fromAddress": from_address,
+                    "toAddress": to_address,
+                    "amount": amount,
+                    "network": network,
+                    "safeMode": True,
+                    "safeModeWarning": str(e),
+                    "error": "Transaction failed due to safe mode"
+                }
+            # Re-raise other exceptions
+            raise
         except:
             pass  # Key might already be imported
         
@@ -82,8 +134,35 @@ def send_transaction(from_address: str, private_key: str, to_address: str, amoun
             "amount": amount,
             "network": network
         }
+    except JSONRPCException as e:
+        # Check if it's a safe mode error
+        if "Safe mode" in str(e):
+            return {
+                "fromAddress": from_address,
+                "toAddress": to_address,
+                "amount": amount,
+                "network": network,
+                "safeMode": True,
+                "safeModeWarning": str(e),
+                "error": "Transaction failed due to safe mode"
+            }
+        # Return a structured error response for other RPC errors
+        return {
+            "fromAddress": from_address,
+            "toAddress": to_address,
+            "amount": amount,
+            "network": network,
+            "error": str(e)
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send transaction on {network} network: {str(e)}")
+        # Return a structured error response for other errors
+        return {
+            "fromAddress": from_address,
+            "toAddress": to_address,
+            "amount": amount,
+            "network": network,
+            "error": str(e)
+        }
 
 def generate_blocks(address: str, num_blocks: int = 1, network: str = DEFAULT_NETWORK) -> Dict[str, Any]:
     """
@@ -104,5 +183,29 @@ def generate_blocks(address: str, num_blocks: int = 1, network: str = DEFAULT_NE
             "blockHashes": block_hashes,
             "network": network
         }
+    except JSONRPCException as e:
+        # Check if it's a safe mode error
+        if "Safe mode" in str(e):
+            return {
+                "address": address,
+                "numBlocks": num_blocks,
+                "network": network,
+                "safeMode": True,
+                "safeModeWarning": str(e),
+                "error": "Mining failed due to safe mode"
+            }
+        # Return a structured error response for other RPC errors
+        return {
+            "address": address,
+            "numBlocks": num_blocks,
+            "network": network,
+            "error": str(e)
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate blocks on {network} network: {str(e)}")
+        # Return a structured error response for other errors
+        return {
+            "address": address,
+            "numBlocks": num_blocks,
+            "network": network,
+            "error": str(e)
+        }
