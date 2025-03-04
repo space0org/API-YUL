@@ -1,23 +1,26 @@
-# Bitcoin SVのネットワークモード切り替えガイド
+# Multi-Bsv-Networkのネットワークモード切り替えガイド
 
-## ネットワークモードについて
+## Multi-Bsv-Networkについて
 
-Bitcoin SVは以下の3つのネットワークモードで動作することができます：
+Multi-Bsv-Networkは、JpyNetworkとLariNetworkの2つのチェーンを持つカスタムBitcoin SVネットワークです。このネットワークは以下の3つのモードで動作することができます：
 
 1. **Regtestモード（リグレッションテストモード）**
    - 開発・テスト用のプライベートネットワーク
-   - マイニング報酬は50 BSVに固定（半減期の影響を受けない）
+   - マイニング報酬は6.25 BSVに設定されています（テスト結果より）
    - ブロック生成が簡単で、即時に取引が確認される
+   - JpyNetwork: ポート18332
+   - LariNetwork: ポート19332
 
 2. **Testnetモード（テストネットワーク）**
-   - 公開テストネットワーク
-   - 実際のBitcoin SVと同様の動作をするが、コインに価値はない
-   - マイニング報酬はメインネットと同様に半減期がある
+   - テスト用の公開ネットワーク
+   - JpyNetwork: ポート18333
+   - LariNetwork: ポート19333
 
 3. **Mainnetモード（メインネットワーク）**
-   - 本番環境の公開ネットワーク
-   - 実際の価値を持つBitcoin SVが取引される
-   - 現在のマイニング報酬は6.25 BSV（3回の半減期後）
+   - Multi-Bsv-Networkのメインネットワーク
+   - JpyNetwork: ポート18444
+   - LariNetwork: ポート19444
+   - 注意: これは実際のBitcoin SVネットワークではなく、Multi-Bsv-Network独自のメインネットワークです
 
 ## API経由でのモード切り替えの制限
 
@@ -39,7 +42,7 @@ curl -X POST "http://localhost:5002/api/network/mode" \
   -d '{"mode":"mainnet","network":"jpy"}'
 ```
 
-このリクエストは内部的にネットワークを一時的に無効化し、再有効化しますが、完全なモード切り替えは行われません。
+このリクエストは内部的にMainnetモードへの接続を試みますが、完全なモード切り替えは行われません。
 
 ### 2. 手動での完全な切り替え（推奨）
 
@@ -75,21 +78,65 @@ Mainnetモードに切り替えた後、ブロックチェーンの同期が必�
 
 ## 注意事項
 
-1. **実際の資産の取り扱い**: Mainnetモードでは実際の価値を持つBitcoin SVが取引されます。テスト目的の場合は、TestnetまたはRegtestモードの使用を強く推奨します。
+1. **ネットワーク要件**: Mainnetモードでは大量のデータ転送が発生する場合があるため、高速で安定したネットワーク接続が必要です。
 
-2. **ネットワーク要件**: Mainnetモードでは大量のデータ転送が発生するため、高速で安定したインターネット接続が必要です。
+2. **ストレージ要件**: Mainnetの完全なブロックチェーンデータは大量のストレージを必要とする場合があります。
 
-3. **ストレージ要件**: Mainnetの完全なブロックチェーンデータは数百GBのストレージを必要とします。
-
-4. **セキュリティ**: Mainnetモードでは、適切なセキュリティ対策を講じることが重要です。
+3. **セキュリティ**: Mainnetモードでは、適切なセキュリティ対策を講じることが重要です。
 
 ## 推奨事項
 
 開発・テスト目的では、Regtestモードの使用を推奨します。Regtestモードでは：
 
-- マイニング報酬が50 BSVと高い
 - ブロック生成が簡単で即時に取引が確認される
 - ネットワーク接続やストレージの要件が低い
-- 実際の資産リスクがない
 
 テストが完了し、本番環境への移行準備ができた場合にのみ、Mainnetモードへの切り替えを検討してください。
+
+## Multi-Bsv-Networkの特徴
+
+Multi-Bsv-Networkは、実際のBitcoin SVネットワークとは別の独自のネットワークで、以下の特徴があります：
+
+1. **2つのチェーン**: JpyNetworkとLariNetworkの2つの独立したチェーンを持ちます。
+
+2. **カスタム設定**: 各チェーンは独自のポート設定を持ち、異なるネットワークモードで動作することができます。
+
+3. **トークンブリッジ**: JpyNetworkとLariNetwork間でトークンを交換するためのブリッジ機能があります。
+
+4. **APIサポート**: 各チェーンに対して、ウォレット作成、残高確認、送金、マイニングなどの操作をAPIを通じて行うことができます。
+
+## APIの使用例
+
+### 現在のネットワークモードを確認
+
+```bash
+# JpyNetworkの現在のモードを確認
+curl "http://localhost:5002/api/network/mode?network=jpy"
+
+# LariNetworkの現在のモードを確認
+curl "http://localhost:5002/api/network/mode?network=lari"
+```
+
+### ネットワークモードを切り替え
+
+```bash
+# JpyNetworkをMainnetモードに切り替え
+curl -X POST "http://localhost:5002/api/network/mode" \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"mainnet","network":"jpy"}'
+
+# LariNetworkをMainnetモードに切り替え
+curl -X POST "http://localhost:5002/api/network/mode" \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"mainnet","network":"lari"}'
+```
+
+### ノード情報を取得
+
+```bash
+# JpyNetworkのノード情報を取得
+curl "http://localhost:5002/api/node/info?network=jpy"
+
+# LariNetworkのノード情報を取得
+curl "http://localhost:5002/api/node/info?network=lari"
+```
