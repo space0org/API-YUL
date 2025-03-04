@@ -1,20 +1,21 @@
-from app.core.bitcoin_rpc import execute_rpc, DEFAULT_NETWORK
+from app.core.bitcoin_rpc import execute_rpc, DEFAULT_NETWORK, DEFAULT_MODE
 from fastapi import HTTPException
 from typing import Dict, List, Any, Optional
 
-def generate_keypair(network: str = DEFAULT_NETWORK) -> Dict[str, str]:
+def generate_keypair(network: str = DEFAULT_NETWORK, mode: str = DEFAULT_MODE) -> Dict[str, str]:
     """
     Generate a new Bitcoin address and private key
     
     Args:
         network: The network to generate the key pair for (jpy or lari)
+        mode: The network mode to use (regtest, testnet, or mainnet)
     """
     try:
         # Generate a new address
-        address = execute_rpc("getnewaddress", network=network)
+        address = execute_rpc("getnewaddress", network=network, mode=mode)
         
         # Get the private key for this address
-        private_key = execute_rpc("dumpprivkey", address, network=network)
+        private_key = execute_rpc("dumpprivkey", address, network=network, mode=mode)
         
         return {
             "address": address,
@@ -22,26 +23,27 @@ def generate_keypair(network: str = DEFAULT_NETWORK) -> Dict[str, str]:
             "network": network
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate key pair on {network} network: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate key pair on {network} network ({mode} mode): {str(e)}")
 
-def get_balance(address: str, network: str = DEFAULT_NETWORK) -> Dict[str, Any]:
+def get_balance(address: str, network: str = DEFAULT_NETWORK, mode: str = DEFAULT_MODE) -> Dict[str, Any]:
     """
     Get the balance and unspent outputs for an address
     
     Args:
         address: The Bitcoin address to check
         network: The network to check the balance on (jpy or lari)
+        mode: The network mode to use (regtest, testnet, or mainnet)
     """
     try:
         # Import the address to the wallet if it's not already there
         try:
-            execute_rpc("importaddress", address, "", False, network=network)
+            execute_rpc("importaddress", address, "", False, network=network, mode=mode)
         except:
             pass  # Address might already be imported
         
         try:
             # Get the unspent transaction outputs for this address
-            unspent = execute_rpc("listunspent", 0, 9999999, [address], network=network)
+            unspent = execute_rpc("listunspent", 0, 9999999, [address], network=network, mode=mode)
             
             # Calculate the total balance
             total_balance = sum(float(utxo['amount']) for utxo in unspent)
@@ -68,9 +70,9 @@ def get_balance(address: str, network: str = DEFAULT_NETWORK) -> Dict[str, Any]:
                 # Re-raise other exceptions
                 raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get balance on {network} network: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get balance on {network} network ({mode} mode): {str(e)}")
 
-def send_transaction(from_address: str, private_key: str, to_address: str, amount: float, network: str = DEFAULT_NETWORK) -> Dict[str, Any]:
+def send_transaction(from_address: str, private_key: str, to_address: str, amount: float, network: str = DEFAULT_NETWORK, mode: str = DEFAULT_MODE) -> Dict[str, Any]:
     """
     Send a transaction from one address to another
     
@@ -80,16 +82,17 @@ def send_transaction(from_address: str, private_key: str, to_address: str, amoun
         to_address: The destination address
         amount: The amount to send
         network: The network to send the transaction on (jpy or lari)
+        mode: The network mode to use (regtest, testnet, or mainnet)
     """
     try:
         # Import the private key if it's not already in the wallet
         try:
-            execute_rpc("importprivkey", private_key, "", False, network=network)
+            execute_rpc("importprivkey", private_key, "", False, network=network, mode=mode)
         except:
             pass  # Key might already be imported
         
         # Create and send the transaction
-        txid = execute_rpc("sendtoaddress", to_address, amount, network=network)
+        txid = execute_rpc("sendtoaddress", to_address, amount, network=network, mode=mode)
         
         return {
             "transactionId": txid,
@@ -99,9 +102,9 @@ def send_transaction(from_address: str, private_key: str, to_address: str, amoun
             "network": network
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send transaction on {network} network: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to send transaction on {network} network ({mode} mode): {str(e)}")
 
-def generate_blocks(address: str, num_blocks: int = 1, network: str = DEFAULT_NETWORK) -> Dict[str, Any]:
+def generate_blocks(address: str, num_blocks: int = 1, network: str = DEFAULT_NETWORK, mode: str = DEFAULT_MODE) -> Dict[str, Any]:
     """
     Generate blocks with mining rewards going to the specified address
     
@@ -109,10 +112,11 @@ def generate_blocks(address: str, num_blocks: int = 1, network: str = DEFAULT_NE
         address: The Bitcoin address to receive the mining rewards
         num_blocks: The number of blocks to generate (default: 1)
         network: The network to generate blocks on (jpy or lari)
+        mode: The network mode to use (regtest, testnet, or mainnet)
     """
     try:
         # Generate blocks with rewards going to the specified address
-        block_hashes = execute_rpc("generatetoaddress", num_blocks, address, network=network)
+        block_hashes = execute_rpc("generatetoaddress", num_blocks, address, network=network, mode=mode)
         
         return {
             "address": address,
@@ -121,4 +125,4 @@ def generate_blocks(address: str, num_blocks: int = 1, network: str = DEFAULT_NE
             "network": network
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate blocks on {network} network: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate blocks on {network} network ({mode} mode): {str(e)}")
