@@ -222,7 +222,7 @@ def switch_network_mode(mode: str, network: str = DEFAULT_NETWORK) -> Dict[str, 
                 "info": current_info,
                 "warning": warning,
                 "manualStepsRequired": True,
-                "documentation": "multi_bsv_network_mode_switching_guide_ja.md"
+                "documentation": "mainnet_switching_guide_ja.md"
             }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to switch network mode on {network} network: {str(e)}")

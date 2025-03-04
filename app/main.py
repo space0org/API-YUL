@@ -34,14 +34,14 @@ class KeyPairResponse(BaseModel):
     address: str
     privateKey: str
     network: str
-    mode: str
+    mode: Optional[str] = None
 
 class BalanceResponse(BaseModel):
     address: str
     balance: float
     unspentOutputs: List[Dict[str, Any]]
     network: str
-    mode: str
+    mode: Optional[str] = None
     safeMode: Optional[bool] = None
     safeModeWarning: Optional[str] = None
 
@@ -51,7 +51,7 @@ class TransactionResponse(BaseModel):
     toAddress: str
     amount: float
     network: str
-    mode: str
+    mode: Optional[str] = None
 
 class GenerateBlocksRequest(BaseModel):
     address: str = Field(..., description="Address to receive mining rewards")
@@ -64,7 +64,7 @@ class GenerateBlocksResponse(BaseModel):
     numBlocks: int
     blockHashes: List[str]
     network: str
-    mode: str
+    mode: Optional[str] = None
 
 class SwitchNetworkModeRequest(BaseModel):
     mode: str = Field(..., description="Network mode to switch to (regtest, testnet, or mainnet)")
