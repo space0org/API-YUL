@@ -1,85 +1,130 @@
-# BSVノードAPI ドキュメント
+# API-YUL ドキュメント
 
-このAPIは、Bitcoin SVノードと対話するためのエンドポイントを提供します。
+## 概要
 
-## 公開URL
+API-YULは、Bitcoin SVノードと対話するためのAPIです。JpyNetworkとLariNetworkの両方をサポートしています。
 
-APIは以下のURLで公開されています：
-https://app-fhxknmbw.fly.dev/
+## APIエンドポイント
 
-## エンドポイント
+### 1. 公開鍵と秘密鍵のペア作成
 
-### 1. 公開鍵と秘密鍵のペア作成 (POST /api/keypair)
+**エンドポイント:** `/api/keypair`
 
-新しい公開鍵（アドレス）と秘密鍵のペアを生成します。
+**メソッド:** POST
 
-**リクエスト:**
+**パラメータ:**
+- `network` (オプション): 使用するネットワーク（`jpy`または`lari`）。デフォルトは`jpy`。
+
+**リクエスト例:**
 ```bash
-curl -X POST https://app-fhxknmbw.fly.dev/api/keypair
+# デフォルトネットワーク（JpyNetwork）
+curl -X POST http://localhost:5002/api/keypair
+
+# ネットワーク指定
+curl -X POST "http://localhost:5002/api/keypair?network=jpy"
+curl -X POST "http://localhost:5002/api/keypair?network=lari"
 ```
 
-**レスポンス:**
+**レスポンス例:**
 ```json
 {
   "address": "mxyz123...",
-  "privateKey": "cxyz123..."
+  "privateKey": "cxyz123...",
+  "network": "jpy"
 }
 ```
 
-### 2. 残高確認 (GET /api/balance/{address})
+### 2. 残高確認
 
-特定のアドレスの残高を取得します。
+**エンドポイント:** `/api/balance/{address}`
 
-**リクエスト:**
+**メソッド:** GET
+
+**パラメータ:**
+- `address`: 残高を確認するBitcoinアドレス
+- `network` (オプション): 使用するネットワーク（`jpy`または`lari`）。デフォルトは`jpy`。
+
+**リクエスト例:**
 ```bash
-curl -X GET https://app-fhxknmbw.fly.dev/api/balance/mxyz123...
+# デフォルトネットワーク（JpyNetwork）
+curl -X GET http://localhost:5002/api/balance/mxyz123...
+
+# ネットワーク指定
+curl -X GET "http://localhost:5002/api/balance/mxyz123...?network=jpy"
+curl -X GET "http://localhost:5002/api/balance/mxyz123...?network=lari"
 ```
 
-**レスポンス:**
+**レスポンス例:**
 ```json
 {
   "address": "mxyz123...",
   "balance": 10.5,
-  "unspentOutputs": [...]
+  "unspentOutputs": [...],
+  "network": "jpy"
 }
 ```
 
-### 3. 送金 (POST /api/send)
+### 3. 送金
 
-あるアドレスから別のアドレスにBSVを送金します。
+**エンドポイント:** `/api/send`
 
-**リクエスト:**
+**メソッド:** POST
+
+**リクエストボディ:**
+```json
+{
+  "fromAddress": "送信元アドレス",
+  "privateKey": "秘密鍵",
+  "toAddress": "送信先アドレス",
+  "amount": 金額,
+  "network": "jpy"  // オプション、デフォルトは"jpy"
+}
+```
+
+**リクエスト例:**
 ```bash
-curl -X POST https://app-fhxknmbw.fly.dev/api/send \
+curl -X POST http://localhost:5002/api/send \
   -H "Content-Type: application/json" \
   -d '{
     "fromAddress": "mxyz123...",
     "privateKey": "cxyz123...",
     "toAddress": "mabc123...",
-    "amount": 1.5
+    "amount": 1.5,
+    "network": "jpy"
   }'
 ```
 
-**レスポンス:**
+**レスポンス例:**
 ```json
 {
   "transactionId": "txyz123...",
   "fromAddress": "mxyz123...",
   "toAddress": "mabc123...",
-  "amount": 1.5
+  "amount": 1.5,
+  "network": "jpy"
 }
 ```
 
-### 4. ノード情報 (GET /api/node/info)
+### 4. ノード情報
 
-BSVノードに関する情報を取得します。
+**エンドポイント:** `/api/node/info`
 
-**リクエスト:**
+**メソッド:** GET
+
+**パラメータ:**
+- `network` (オプション): 使用するネットワーク（`jpy`または`lari`）。デフォルトは`jpy`。
+
+**リクエスト例:**
 ```bash
-curl -X GET https://app-fhxknmbw.fly.dev/api/node/info
+# デフォルトネットワーク（JpyNetwork）
+curl -X GET http://localhost:5002/api/node/info
+
+# ネットワーク指定
+curl -X GET "http://localhost:5002/api/node/info?network=jpy"
+curl -X GET "http://localhost:5002/api/node/info?network=lari"
 ```
 
-**レスポンス:**
+**レスポンス例:**
 ```json
 {
   "version": 101000800,
@@ -87,58 +132,59 @@ curl -X GET https://app-fhxknmbw.fly.dev/api/node/info
   "connections": 2,
   "chain": "regtest",
   "blocks": 265,
-  "difficulty": 4.656542373906925e-10
+  "difficulty": 4.656542373906925e-10,
+  "network": "jpy"
 }
 ```
 
-### 5. ヘルスチェック (GET /healthz)
+### 5. ヘルスチェック
 
-APIの健全性を確認します。
+**エンドポイント:** `/healthz`
 
-**リクエスト:**
+**メソッド:** GET
+
+**リクエスト例:**
 ```bash
-curl -X GET https://app-fhxknmbw.fly.dev/healthz
+curl -X GET http://localhost:5002/healthz
 ```
 
-**レスポンス:**
+**レスポンス例:**
 ```json
 {
   "status": "ok"
 }
 ```
 
-## コマンドリスト
+## ネットワーク設定
 
-以下は、APIを使用するためのcurlコマンドのリストです：
+APIは以下の2つのネットワークをサポートしています：
 
-### 1. 公開鍵と秘密鍵のペア作成
-```bash
-curl -X POST https://app-fhxknmbw.fly.dev/api/keypair
-```
+1. **JpyNetwork**
+   - ネットワークパラメータ: `jpy`
+   - P2Pポート: 18444
+   - RPCポート: 18332
 
-### 2. 残高確認
-```bash
-curl -X GET https://app-fhxknmbw.fly.dev/api/balance/<アドレス>
-```
+2. **LariNetwork**
+   - ネットワークパラメータ: `lari`
+   - P2Pポート: 19444
+   - RPCポート: 19332
 
-### 3. 送金
-```bash
-curl -X POST https://app-fhxknmbw.fly.dev/api/send \
-  -H "Content-Type: application/json" \
-  -d '{
-    "fromAddress": "<送信元アドレス>",
-    "privateKey": "<秘密鍵>",
-    "toAddress": "<送信先アドレス>",
-    "amount": <金額>
-  }'
-```
+ネットワークパラメータを指定しない場合は、デフォルトでJpyNetworkが使用されます。
 
-### 4. ノード情報取得
-```bash
-curl -X GET https://app-fhxknmbw.fly.dev/api/node/info
-```
+## 環境変数
 
-### 5. ヘルスチェック
-```bash
-curl -X GET https://app-fhxknmbw.fly.dev/healthz
-```
+APIは以下の環境変数を使用してネットワーク設定を行います：
+
+### JpyNetwork設定
+- `JPY_RPC_USER`: JpyNetworkのRPCユーザー名
+- `JPY_RPC_PASSWORD`: JpyNetworkのRPCパスワード
+- `JPY_RPC_HOST`: JpyNetworkのホスト名またはIPアドレス
+- `JPY_RPC_PORT`: JpyNetworkのRPCポート
+
+### LariNetwork設定
+- `LARI_RPC_USER`: LariNetworkのRPCユーザー名
+- `LARI_RPC_PASSWORD`: LariNetworkのRPCパスワード
+- `LARI_RPC_HOST`: LariNetworkのホスト名またはIPアドレス
+- `LARI_RPC_PORT`: LariNetworkのRPCポート
+
+環境変数が設定されていない場合は、デフォルト値が使用されます。
