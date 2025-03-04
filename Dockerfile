@@ -14,6 +14,9 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false && \
     poetry install --no-root
 
+# Explicitly install python-bitcoinrpc to ensure it's available
+RUN pip install python-bitcoinrpc
+
 COPY . .
 
 EXPOSE 5002
