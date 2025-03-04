@@ -1,7 +1,7 @@
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from fastapi import HTTPException
 import os
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 
 # Network configurations
 NETWORK_CONFIGS = {
@@ -49,7 +49,7 @@ def get_rpc_connection(network: str = DEFAULT_NETWORK) -> AuthServiceProxy:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to connect to Bitcoin node ({network}): {str(e)}")
 
-def execute_rpc(method: str, *params, network: str = DEFAULT_NETWORK) -> any:
+def execute_rpc(method: str, *params, network: str = DEFAULT_NETWORK) -> Any:
     """
     Execute an RPC method with the given parameters on the specified network
     
